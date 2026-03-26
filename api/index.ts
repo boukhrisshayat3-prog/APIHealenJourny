@@ -4,7 +4,7 @@ import dotenv from "dotenv"
 import cors from "cors";
 
 // 1.- Activamos las variables de entorno de nuestro archivo secreto
-dotenv.config();
+dotenv.config()
 
 // 2.- Creamos la aplicacion express
 const app = express();
