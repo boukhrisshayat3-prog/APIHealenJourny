@@ -52,7 +52,19 @@ const HeroSchema = new mongoose.Schema(
   },
 );
 
+const UserSchema = new mongoose.Schema(
+  {
+    name: String,
+    email: String,
+    role: String,
+  },
+  {
+    collection: "UsersInfo",
+  },
+);
+
 const Hero = mongoose.models.Heroes || mongoose.model("Hero", HeroSchema);
+const User = mongoose.models.User || mongoose.model("User", UserSchema);
 
 const getMongoDebugInfo = () => {
   return {
@@ -163,6 +175,98 @@ app.delete("/api/hero/:id", async (req: Request, res: Response) => {
     console.error("Error al eliminar la hero:", error);
     res.status(500).json({
       error: "No se pudo eliminar la hero",
+      detail: error instanceof Error ? error.message : "Error Desconocido",
+    });
+  }
+});
+
+// GET DE LOS USERS
+app.get("/api/users", async (req: Request, res: Response) => {
+  try {
+    await connectToMongo();
+    const users = await User.find();
+    res.json(users);
+  } catch (error) {
+    console.error("Error al leer users", error);
+    res.status(500).json({
+      error: "No se pudieron obtener los users",
+      detail: error instanceof Error ? error.message : "Error Desconocido",
+    });
+  }
+});
+
+// POST DE LOS USERS
+app.post("/api/users", async (req: Request, res: Response) => {
+  try {
+    const { name, email, role } = req.body;
+    if (!name || !email || !role) {
+      res.status(400).json({ error: "Debes enviar todos los campos, espabila!!" });
+      return;
+    }
+
+    await connectToMongo();
+    const nuevoUser = new User({ name, email, role });
+    await nuevoUser.save();
+    res.status(201).json(nuevoUser);
+  } catch (error) {
+    console.error("Error al crear el user:", error);
+    res.status(500).json({
+      error: "No se pudo crear el user",
+      detail: error instanceof Error ? error.message : "Error Desconocido",
+    });
+  }
+});
+
+// PUT DE LOS USERS
+app.put("/api/users/:id", async (req: Request, res: Response) => {
+  try {
+    const { name, email, role } = req.body;
+    if (!name || !email || !role) {
+      res.status(400).json({ error: "Debes enviar todos los campos, espabila!!" });
+      return;
+    }
+
+    await connectToMongo();
+    const userActualizado = await User.findByIdAndUpdate(
+      req.params.id,
+      { name, email, role },
+      { returnDocument: "after" },
+    );
+
+    if (!userActualizado) {
+      res.status(404).json({ error: "User no encontrado" });
+      return;
+    }
+
+    res.json(userActualizado);
+  } catch (error) {
+    console.error("Error al actualizar el user:", error);
+    res.status(500).json({
+      error: "No se pudo actualizar el user",
+      detail: error instanceof Error ? error.message : "Error Desconocido",
+    });
+  }
+});
+
+// DELETE DE LOS USERS
+app.delete("/api/users/:id", async (req: Request, res: Response) => {
+  try {
+    await connectToMongo();
+    const userEliminado = await User.findByIdAndDelete(req.params.id);
+
+    if (!userEliminado) {
+      res.status(404).json({ error: "User no encontrado" });
+      return;
+    }
+
+    res.json({
+      message: "User eliminado correctamente",
+      user: userEliminado,
+    });
+  } catch (error) {
+    console.error("Error al eliminar el user:", error);
+    res.status(500).json({
+      error: "No se pudo eliminar el user",
       detail: error instanceof Error ? error.message : "Error Desconocido",
     });
   }
