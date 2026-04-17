@@ -74,14 +74,14 @@ const ProjectSchema = new mongoose.Schema(
     github: String
   },
   {
-    collection: "Project",
+    collection: "Projects",
   },
 );
 
 
 const Hero = mongoose.models.Heroes || mongoose.model("Hero", HeroSchema);
 const User = mongoose.models.User || mongoose.model("User", UserSchema);
-const Project = mongoose.models.Project || mongoose.model("Project", ProjectSchema);
+const Project = mongoose.models.Project || mongoose.model("Projects", ProjectSchema);
 
 const getMongoDebugInfo = () => {
   return {
