@@ -105,12 +105,26 @@ const TestimonialSchema = new mongoose.Schema(
   },
 );
 
+const ContactInfoSchema = new mongoose.Schema(
+  {
+    _id: String,
+    icon: String,
+    label: String,
+    value: String,
+    href: String,
+  },
+  {
+    collection: "ContactInfo",
+  },
+);
+
 
 const Hero = mongoose.models.Heroes || mongoose.model("Hero", HeroSchema);
 const User = mongoose.models.User || mongoose.model("User", UserSchema);
 const Project = mongoose.models.Project || mongoose.model("Projects", ProjectSchema);
 const Experience = mongoose.models.Experience || mongoose.model("Experience", ExperienceSchema);
 const Testimonial = mongoose.models.Testimonial || mongoose.model("Testimonial", TestimonialSchema);
+const ContactInfo = mongoose.models.ContactInfo || mongoose.model("ContactInfo", ContactInfoSchema);
 
 const getMongoDebugInfo = () => {
   return {
@@ -120,6 +134,7 @@ const getMongoDebugInfo = () => {
     projectCollection: Project.collection.name,
     experienceCollection: Experience.collection.name,
     testimonialCollection: Testimonial.collection.name,
+    contactInfoCollection: ContactInfo.collection.name,
     readyState: mongoose.connection.readyState,
   };
 };
@@ -616,6 +631,98 @@ app.delete("/api/testimonials/:id", async (req: Request, res: Response) => {
     console.error("Error al eliminar el testimonial:", error);
     res.status(500).json({
       error: "No se pudo eliminar el testimonial",
+      detail: error instanceof Error ? error.message : "Error Desconocido",
+    });
+  }
+});
+
+// GET DE LOS CONTACT INFO
+app.get("/api/contactinfo", async (req: Request, res: Response) => {
+  try {
+    await connectToMongo();
+    const contactInfo = await ContactInfo.find();
+    res.json(contactInfo);
+  } catch (error) {
+    console.error("Error al leer contactinfo", error);
+    res.status(500).json({
+      error: "No se pudieron obtener los contactinfo",
+      detail: error instanceof Error ? error.message : "Error Desconocido",
+    });
+  }
+});
+
+// POST DE LOS CONTACT INFO
+app.post("/api/contactinfo", async (req: Request, res: Response) => {
+  try {
+    const { _id, icon, label, value, href } = req.body;
+    if (!_id || !icon || !label || !value || !href) {
+      res.status(400).json({ error: "Debes enviar todos los campos, espabila!!" });
+      return;
+    }
+
+    await connectToMongo();
+    const nuevoContactInfo = new ContactInfo({ _id, icon, label, value, href });
+    await nuevoContactInfo.save();
+    res.status(201).json(nuevoContactInfo);
+  } catch (error) {
+    console.error("Error al crear el contactinfo:", error);
+    res.status(500).json({
+      error: "No se pudo crear el contactinfo",
+      detail: error instanceof Error ? error.message : "Error Desconocido",
+    });
+  }
+});
+
+// PUT DE LOS CONTACT INFO
+app.put("/api/contactinfo/:id", async (req: Request, res: Response) => {
+  try {
+    const { icon, label, value, href } = req.body;
+    if (!icon || !label || !value || !href) {
+      res.status(400).json({ error: "Debes enviar todos los campos, espabila!!" });
+      return;
+    }
+
+    await connectToMongo();
+    const contactInfoActualizado = await ContactInfo.findByIdAndUpdate(
+      req.params.id,
+      { icon, label, value, href },
+      { returnDocument: "after" },
+    );
+
+    if (!contactInfoActualizado) {
+      res.status(404).json({ error: "ContactInfo no encontrado" });
+      return;
+    }
+
+    res.json(contactInfoActualizado);
+  } catch (error) {
+    console.error("Error al actualizar el contactinfo:", error);
+    res.status(500).json({
+      error: "No se pudo actualizar el contactinfo",
+      detail: error instanceof Error ? error.message : "Error Desconocido",
+    });
+  }
+});
+
+// DELETE DE LOS CONTACT INFO
+app.delete("/api/contactinfo/:id", async (req: Request, res: Response) => {
+  try {
+    await connectToMongo();
+    const contactInfoEliminado = await ContactInfo.findByIdAndDelete(req.params.id);
+
+    if (!contactInfoEliminado) {
+      res.status(404).json({ error: "ContactInfo no encontrado" });
+      return;
+    }
+
+    res.json({
+      message: "ContactInfo eliminado correctamente",
+      contactInfo: contactInfoEliminado,
+    });
+  } catch (error) {
+    console.error("Error al eliminar el contactinfo:", error);
+    res.status(500).json({
+      error: "No se pudo eliminar el contactinfo",
       detail: error instanceof Error ? error.message : "Error Desconocido",
     });
   }
