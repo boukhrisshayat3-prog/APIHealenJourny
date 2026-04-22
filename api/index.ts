@@ -92,11 +92,25 @@ const ExperienceSchema = new mongoose.Schema(
   },
 );
 
+const TestimonialSchema = new mongoose.Schema(
+  {
+    _id: String,
+    quote: String,
+    author: String,
+    role: String,
+    avatar: String,
+  },
+  {
+    collection: "Testimonials",
+  },
+);
+
 
 const Hero = mongoose.models.Heroes || mongoose.model("Hero", HeroSchema);
 const User = mongoose.models.User || mongoose.model("User", UserSchema);
 const Project = mongoose.models.Project || mongoose.model("Projects", ProjectSchema);
 const Experience = mongoose.models.Experience || mongoose.model("Experience", ExperienceSchema);
+const Testimonial = mongoose.models.Testimonial || mongoose.model("Testimonial", TestimonialSchema);
 
 const getMongoDebugInfo = () => {
   return {
@@ -105,6 +119,7 @@ const getMongoDebugInfo = () => {
     userCollection: User.collection.name,
     projectCollection: Project.collection.name,
     experienceCollection: Experience.collection.name,
+    testimonialCollection: Testimonial.collection.name,
     readyState: mongoose.connection.readyState,
   };
 };
@@ -509,6 +524,98 @@ app.delete("/api/experience/:id", async (req: Request, res: Response) => {
     console.error("Error al eliminar la experience:", error);
     res.status(500).json({
       error: "No se pudo eliminar la experience",
+      detail: error instanceof Error ? error.message : "Error Desconocido",
+    });
+  }
+});
+
+// GET DE LOS TESTIMONIALS
+app.get("/api/testimonials", async (req: Request, res: Response) => {
+  try {
+    await connectToMongo();
+    const testimonials = await Testimonial.find();
+    res.json(testimonials);
+  } catch (error) {
+    console.error("Error al leer testimonials", error);
+    res.status(500).json({
+      error: "No se pudieron obtener los testimonials",
+      detail: error instanceof Error ? error.message : "Error Desconocido",
+    });
+  }
+});
+
+// POST DE LOS TESTIMONIALS
+app.post("/api/testimonials", async (req: Request, res: Response) => {
+  try {
+    const { _id, quote, author, role, avatar } = req.body;
+    if (!_id || !quote || !author || !role || !avatar) {
+      res.status(400).json({ error: "Debes enviar todos los campos, espabila!!" });
+      return;
+    }
+
+    await connectToMongo();
+    const nuevoTestimonial = new Testimonial({ _id, quote, author, role, avatar });
+    await nuevoTestimonial.save();
+    res.status(201).json(nuevoTestimonial);
+  } catch (error) {
+    console.error("Error al crear el testimonial:", error);
+    res.status(500).json({
+      error: "No se pudo crear el testimonial",
+      detail: error instanceof Error ? error.message : "Error Desconocido",
+    });
+  }
+});
+
+// PUT DE LOS TESTIMONIALS
+app.put("/api/testimonials/:id", async (req: Request, res: Response) => {
+  try {
+    const { quote, author, role, avatar } = req.body;
+    if (!quote || !author || !role || !avatar) {
+      res.status(400).json({ error: "Debes enviar todos los campos, espabila!!" });
+      return;
+    }
+
+    await connectToMongo();
+    const testimonialActualizado = await Testimonial.findByIdAndUpdate(
+      req.params.id,
+      { quote, author, role, avatar },
+      { returnDocument: "after" },
+    );
+
+    if (!testimonialActualizado) {
+      res.status(404).json({ error: "Testimonial no encontrado" });
+      return;
+    }
+
+    res.json(testimonialActualizado);
+  } catch (error) {
+    console.error("Error al actualizar el testimonial:", error);
+    res.status(500).json({
+      error: "No se pudo actualizar el testimonial",
+      detail: error instanceof Error ? error.message : "Error Desconocido",
+    });
+  }
+});
+
+// DELETE DE LOS TESTIMONIALS
+app.delete("/api/testimonials/:id", async (req: Request, res: Response) => {
+  try {
+    await connectToMongo();
+    const testimonialEliminado = await Testimonial.findByIdAndDelete(req.params.id);
+
+    if (!testimonialEliminado) {
+      res.status(404).json({ error: "Testimonial no encontrado" });
+      return;
+    }
+
+    res.json({
+      message: "Testimonial eliminado correctamente",
+      testimonial: testimonialEliminado,
+    });
+  } catch (error) {
+    console.error("Error al eliminar el testimonial:", error);
+    res.status(500).json({
+      error: "No se pudo eliminar el testimonial",
       detail: error instanceof Error ? error.message : "Error Desconocido",
     });
   }
